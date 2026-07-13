@@ -1,0 +1,4 @@
+Policy_Type,Unique_Policies,Total_Premium_Collected,Total_Claims_Filed,Total_Claims_Amount_Filed,Approved_Claims_Count,Total_Claims_Paid,Fraud_Claims_Count,Loss_Ratio,Net_Profit,Average_Claim_Amount_Paid,Claim_Approval_Rate,Fraud_Rate
+Auto,640,27707491.0,1327,229511199.0,305,50106847.0,236,1.8084,-22399356.0,164284.74,22.98,17.78
+Health,166,6482545.0,333,58559979.0,91,16128120.0,55,2.4879,-9645575.0,177232.09,27.33,16.52
+Home,160,6703634.0,340,60508913.0,75,12342717.0,65,1.8412,-5639083.0,164569.56,22.06,19.12

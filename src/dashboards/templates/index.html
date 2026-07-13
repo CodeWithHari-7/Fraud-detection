@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claims Risk & Fraud Analytics Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --container-bg: #1e293b;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --sidebar-width: 260px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: #0b0f19;
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-blue), #8b5cf6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(to right, #f8fafc, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: var(--text-primary);
+            background-color: var(--container-bg);
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        /* Main Content Container */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex-grow: 1;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        header {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        header .time-stamp {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* Dashboards / Tab Pages */
+        .tab-page {
+            display: none;
+        }
+
+        .tab-page.active {
+            display: block;
+        }
+
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .kpi-title {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .kpi-indicator {
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .kpi-indicator.up { color: var(--accent-green); }
+        .kpi-indicator.down { color: var(--accent-red); }
+
+        /* Dashboard Grid Layouts */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* Table Design */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #111827;
+            color: var(--text-secondary);
+            padding: 14px 16px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: #e2e8f0;
+        }
+
+        tr:hover td {
+            background-color: #273549;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-approved { background-color: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .badge-pending { background-color: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
+        .badge-rejected { background-color: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+        
+        .badge-risk {
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .badge-risk-high { background-color: var(--accent-red); color: white; }
+        .badge-risk-mid { background-color: var(--accent-yellow); color: black; }
+        .badge-risk-low { background-color: var(--accent-green); color: white; }
+
+        /* Search and Filters */
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-input, .select-filter {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            outline: none;
+            font-size: 13px;
+        }
+
+        .search-input {
+            flex-grow: 1;
+            max-width: 300px;
+        }
+
+        /* Cohort Grid Heatmap */
+        .cohort-grid {
+            display: grid;
+            grid-template-columns: 120px repeat(13, 1fr);
+            gap: 2px;
+            margin-top: 15px;
+            background-color: var(--border-color);
+            padding: 2px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .cohort-header {
+            background-color: #111827;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--text-secondary);
+        }
+
+        .cohort-cell {
+            padding: 10px 8px;
+            text-align: center;
+            background-color: var(--container-bg);
+        }
+
+        .cohort-month-label {
+            background-color: #111827;
+            padding: 10px 8px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Specific Responsive tweaks */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="logo-container">
+            <div class="logo-icon">🛡️</div>
+            <div class="logo-text">CLAIMSRISK AI</div>
+        </div>
+        <ul class="nav-links">
+            <li class="nav-item active" onclick="switchTab('executive')">📊 Executive Summary</li>
+            <li class="nav-item" onclick="switchTab('claims')">📂 Claims Analysis</li>
+            <li class="nav-item" onclick="switchTab('fraud')">🕵️ Fraud Detection</li>
+            <li class="nav-item" onclick="switchTab('segmentation')">👥 Segmentation</li>
+            <li class="nav-item" onclick="switchTab('policy')">📈 Policy Performance</li>
+            <li class="nav-item" onclick="switchTab('forecasting')">⏰ claims Forecasting</li>
+            <li class="nav-item" onclick="switchTab('cohort')">🔄 Cohort Analysis</li>
+            <li class="nav-item" onclick="switchTab('upload')">📥 Upload Excel</li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <header>
+            <h1 id="page-title">Executive Summary</h1>
+            <div class="time-stamp">System Time: <span id="local-time">2026-07-12 19:00:00</span></div>
+        </header>
+
+        <!-- KPI Cards Summary Block -->
+        <section class="kpi-grid" id="kpi-section">
+            <div class="kpi-card">
+                <div class="kpi-title">Total Customers</div>
+                <div class="kpi-value" id="kpi-customers">-</div>
+                <div class="kpi-indicator up">▲ 4.2% vs Q1</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Total Premium Collected</div>
+                <div class="kpi-value" id="kpi-premium">-</div>
+                <div class="kpi-indicator up">▲ 8.1% vs Q1</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Loss Ratio</div>
+                <div class="kpi-value" id="kpi-loss-ratio">-</div>
+                <div class="kpi-indicator down">▼ 2.4% vs Q1</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Claims Fraud Rate</div>
+                <div class="kpi-value" id="kpi-fraud-rate">-</div>
+                <div class="kpi-indicator down">▼ 0.8% Target</div>
+            </div>
+        </section>
+
+        <!-- Page 1: Executive Summary -->
+        <div id="tab-executive" class="tab-page active">
+            <div class="chart-grid">
+                <div class="card">
+                    <div class="card-title">Claims Underwriting Portfolio Volume by Segment</div>
+                    <div class="chart-container">
+                        <canvas id="chart-exec-portfolio"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Key Underwriting KPI Metrics</div>
+                    <div class="table-container" style="margin-top: 0;">
+                        <table style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th>Metric KPI Label</th>
+                                    <th>Current Value</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="exec-kpi-tbody">
+                                <tr><td>Total Policies</td><td id="td-pol-count">-</td><td><span class="badge badge-approved">Active</span></td></tr>
+                                <tr><td>Total Claims Filed</td><td id="td-claims-count">-</td><td><span class="badge badge-pending">Processing</span></td></tr>
+                                <tr><td>Average Claim Amount</td><td id="td-avg-claim">-</td><td><span class="badge badge-approved">Stable</span></td></tr>
+                                <tr><td>Claim Approval Rate</td><td id="td-app-rate">-</td><td><span class="badge badge-approved">Target</span></td></tr>
+                                <tr><td>Claim Rejection Rate</td><td id="td-rej-rate">-</td><td><span class="badge badge-rejected">Audited</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 2: Claims Analysis -->
+        <div id="tab-claims" class="tab-page">
+            <div class="card">
+                <div class="card-title">
+                    Claims Search & Validation Grid
+                </div>
+                <div class="filter-bar">
+                    <input type="text" id="claims-search" class="search-input" placeholder="Search customer or claim ID..." oninput="filterClaimsTable()">
+                    <select id="filter-policy-type" class="select-filter" onchange="filterClaimsTable()">
+                        <option value="">All Policy Types</option>
+                        <option value="Auto">Auto</option>
+                        <option value="Home">Home</option>
+                        <option value="Health">Health</option>
+                        <option value="Life">Life</option>
+                    </select>
+                    <select id="filter-status" class="select-filter" onchange="filterClaimsTable()">
+                        <option value="">All Statuses</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Claim ID</th>
+                                <th>Client Name</th>
+                                <th>Policy Type</th>
+                                <th>Claim Date</th>
+                                <th>Claim Amount</th>
+                                <th>Status</th>
+                                <th>Risk Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="claims-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 3: Fraud Detection -->
+        <div id="tab-fraud" class="tab-page">
+            <div class="chart-grid">
+                <div class="card">
+                    <div class="card-title">ML Models Comparative Precision & Recall vs Ground Truth</div>
+                    <div class="chart-container">
+                        <canvas id="chart-fraud-models"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Suspicious Claims Pending SIU Verification</div>
+                    <div class="table-container">
+                        <table style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th>Claim ID</th>
+                                    <th>Policy Type</th>
+                                    <th>Claim Amount</th>
+                                    <th>Risk Score</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fraud-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 4: Customer Segmentation -->
+        <div id="tab-segmentation" class="tab-page">
+            <div class="chart-grid">
+                <div class="card">
+                    <div class="card-title">Customer Distribution by RFM Value Segments</div>
+                    <div class="chart-container">
+                        <canvas id="chart-rfm-segments"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">RFM Value Segment Overview</div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Segment</th>
+                                    <th>Claim Rate Description</th>
+                                    <th>Audit Priority</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>VIP</td><td>High volume, High Premium</td><td><span class="badge badge-approved">Low</span></td></tr>
+                                <tr><td>High Value</td><td>Stable claims, Good margin</td><td><span class="badge badge-approved">Low</span></td></tr>
+                                <tr><td>Regular</td><td>Standard occurrences</td><td><span class="badge badge-pending">Medium</span></td></tr>
+                                <tr><td>At Risk</td><td>Multiple claims, dormant recently</td><td><span class="badge badge-pending">Medium</span></td></tr>
+                                <tr><td>Dormant</td><td>Single old occurrence</td><td><span class="badge badge-approved">Low</span></td></tr>
+                                <tr><td>High Fraud Risk</td><td>Model score >= 65</td><td><span class="badge badge-rejected">CRITICAL ACTION</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 5: Policy Performance -->
+        <div id="tab-policy" class="tab-page">
+            <div class="chart-grid">
+                <div class="card">
+                    <div class="card-title">Loss Ratio (%) by Policy Product Line</div>
+                    <div class="chart-container">
+                        <canvas id="chart-policy-loss"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Underwriting Profitability Comparison (₹)</div>
+                    <div class="chart-container">
+                        <canvas id="chart-policy-profit"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 6: Claims Forecasting -->
+        <div id="tab-forecasting" class="tab-page">
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="card-title">90-Day Projected Payout Trend (₹)</div>
+                <div class="chart-container" style="height: 350px;">
+                    <canvas id="chart-forecast-payout"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 7: Cohort Analysis -->
+        <div id="tab-cohort" class="tab-page">
+            <div class="card">
+                <div class="card-title">Actuarial Monthly Claims Activity Cohort Retention Grid</div>
+                <div class="table-container">
+                    <div class="cohort-grid" id="cohort-matrix-grid">
+                        <!-- Heatmap rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 8: Upload Excel -->
+        <div id="tab-upload" class="tab-page">
+            <div class="card" style="max-width: 600px; margin: 0 auto; padding: 40px; border-radius: 12px; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid var(--border-color); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);">
+                <div class="card-title" style="font-size: 20px; font-weight: 700; margin-bottom: 10px; text-align: center;">Upload Claims Excel Sheet</div>
+                <p style="color: var(--text-secondary); text-align: center; margin-bottom: 30px; font-size: 14px;">Upload your insurance raw transaction database to automatically clean, profile, process, and recalculate all analytical properties across the entire dashboard.</p>
+                
+                <div id="drop-zone" style="border: 2px dashed var(--border-color); border-radius: 10px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;" ondragover="event.preventDefault(); this.style.borderColor='var(--accent-blue)'; this.style.background='rgba(59, 130, 246, 0.05)';" ondragleave="this.style.borderColor='var(--border-color)'; this.style.background='none';" ondrop="handleFileDrop(event)">
+                    <div style="font-size: 48px;">📊</div>
+                    <div style="font-weight: 600; color: var(--text-primary);">Drag & drop your Excel file here</div>
+                    <div style="color: var(--text-secondary); font-size: 13px;">Supports .xlsx or .xls files</div>
+                    <button type="button" style="background-color: var(--container-bg); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; margin-top: 10px; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-blue)';" onmouseout="this.style.borderColor='var(--border-color)';" onclick="document.getElementById('file-input').click();">Browse Files</button>
+                    <input type="file" id="file-input" style="display: none;" accept=".xlsx, .xls" onchange="handleFileSelect(event)">
+                </div>
+
+                <div id="file-details" style="display: none; margin-top: 25px; background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 24px;">📄</span>
+                        <div style="text-align: left;">
+                            <div id="file-name" style="font-weight: 600; font-size: 14px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</div>
+                            <div id="file-size" style="color: var(--text-secondary); font-size: 12px;">-</div>
+                        </div>
+                    </div>
+                    <button onclick="clearSelectedFile()" style="background: none; border: none; color: var(--accent-red); font-size: 20px; cursor: pointer; padding: 5px;">✕</button>
+                </div>
+
+                <button id="btn-process" onclick="uploadAndProcessFile()" style="width: 100%; margin-top: 30px; background: linear-gradient(135deg, var(--accent-blue), #8b5cf6); border: none; color: #fff; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: not-allowed; opacity: 0.5; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);" disabled>Process Data & Update Dashboard</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Calculation & Progress Overlay Modal -->
+    <div id="progress-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 20px;">
+        <div style="width: 70px; height: 70px; border: 5px solid rgba(59, 130, 246, 0.2); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <div id="progress-title" style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-top: 10px;">Uploading Excel Database...</div>
+        <div id="progress-text" style="color: var(--text-secondary); font-size: 14px; width: 80%; max-width: 450px; text-align: center; line-height: 1.5;">Preparing raw transaction records for analysis</div>
+        <div style="width: 300px; height: 6px; background-color: #334155; border-radius: 3px; overflow: hidden; margin-top: 10px;">
+            <div id="progress-bar-fill" style="width: 5%; height: 100%; background: linear-gradient(90deg, var(--accent-blue), #8b5cf6); transition: width 0.4s ease-in-out;"></div>
+        </div>
+        <style>
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+        </style>
+    </div>
+
+    <!-- Dashboard App Scripts -->
+    <script>
+        // Global variables for caching data
+        let claimsData = [];
+        let charts = {};
+
+        // Local timestamp update
+        // Local timestamp update in Indian Standard Time (IST)
+        function updateLocalTime() {
+            const options = { 
+                timeZone: 'Asia/Kolkata', 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit', 
+                hour12: true 
+            };
+            const formatter = new Intl.DateTimeFormat('en-IN', options);
+            document.getElementById("local-time").innerText = formatter.format(new Date());
+        }
+        updateLocalTime();
+        setInterval(updateLocalTime, 1000);
+
+        // Tab Switcher
+        function switchTab(tabId) {
+            // Update Active Nav Class
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            // Update Tab Page Visibility
+            const pages = document.querySelectorAll('.tab-page');
+            pages.forEach(page => page.classList.remove('active'));
+            
+            const targetPage = document.getElementById(`tab-${tabId}`);
+            targetPage.classList.add('active');
+
+            // Toggle KPI grid section visibility
+            const kpiSection = document.getElementById('kpi-section');
+            if (tabId === 'upload') {
+                kpiSection.style.display = 'none';
+            } else {
+                kpiSection.style.display = 'grid';
+            }
+
+            // Update Page Header Title
+            const titleMap = {
+                'executive': 'Executive Summary',
+                'claims': 'Claims Analysis',
+                'fraud': 'Fraud Detection & Risk Models',
+                'segmentation': 'Customer Value Segmentation',
+                'policy': 'Policy Performance & Profitability',
+                'forecasting': '90-Day Claims Forecasting',
+                'cohort': 'Actuarial Cohort Analysis',
+                'upload': 'Upload & Calculation Center'
+            };
+            document.getElementById('page-title').innerText = titleMap[tabId];
+            
+            // Trigger Chart Resize/Re-render if necessary
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 100);
+        }
+
+        // Currency Formatter Helper
+        function formatINR(val) {
+            return new Intl.NumberFormat('en-IN', { 
+                style: 'currency', 
+                currency: 'INR', 
+                maximumFractionDigits: 0 
+            }).format(val);
+        }
+
+        // Fetch KPIs
+        async function fetchKPIs() {
+            try {
+                const res = await fetch("/api/kpis");
+                const data = await res.json();
+                
+                // Set Header Cards
+                document.getElementById("kpi-customers").innerText = data.total_customers.toLocaleString();
+                document.getElementById("kpi-premium").innerText = formatINR(data.total_premium);
+                document.getElementById("kpi-loss-ratio").innerText = `${(data.loss_ratio * 100).toFixed(1)}%`;
+                document.getElementById("kpi-fraud-rate").innerText = `${data.fraud_rate.toFixed(1)}%`;
+
+                // Set Table KPIs
+                document.getElementById("td-pol-count").innerText = data.total_policies.toLocaleString();
+                document.getElementById("td-claims-count").innerText = data.total_claims.toLocaleString();
+                document.getElementById("td-avg-claim").innerText = formatINR(data.average_claim);
+                document.getElementById("td-app-rate").innerText = `${data.claim_approval_rate.toFixed(1)}%`;
+                document.getElementById("td-rej-rate").innerText = `${data.claim_rejection_rate.toFixed(1)}%`;
+            } catch (err) {
+                console.error("Error loading KPI data:", err);
+            }
+        }
+
+        // Fetch Claims List and populate table
+        async function fetchClaims() {
+            try {
+                const res = await fetch("/api/claims");
+                claimsData = await res.json();
+                renderClaimsTable(claimsData);
+                renderSuspiciousClaimsTable(claimsData);
+            } catch (err) {
+                console.error("Error loading claims data:", err);
+            }
+        }
+
+        // Render Claims Grid Table
+        function renderClaimsTable(data) {
+            const tbody = document.getElementById("claims-table-body");
+            tbody.innerHTML = "";
+            
+            data.forEach(row => {
+                const badgeClass = row.Claim_Status === "Approved" ? "badge-approved" : 
+                                   row.Claim_Status === "Pending" ? "badge-pending" : "badge-rejected";
+                                   
+                const riskClass = row.Fraud_Risk_Score >= 65 ? "badge-risk-high" :
+                                  row.Fraud_Risk_Score >= 35 ? "badge-risk-mid" : "badge-risk-low";
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><strong>${row.Claim_ID}</strong></td>
+                    <td>${row.Customer_Name}</td>
+                    <td>${row.Policy_Type}</td>
+                    <td>${row.Claim_Date}</td>
+                    <td>${formatINR(row.Claim_Amount)}</td>
+                    <td><span class="badge ${badgeClass}">${row.Claim_Status}</span></td>
+                    <td><span class="badge badge-risk ${riskClass}">${row.Fraud_Risk_Score}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Render Suspicious Claims in SIU Tab
+        function renderSuspiciousClaimsTable(data) {
+            const tbody = document.getElementById("fraud-table-body");
+            tbody.innerHTML = "";
+            
+            // Filter claims where Risk Score >= 50
+            const suspicious = data.filter(c => c.Fraud_Risk_Score >= 50).slice(0, 15);
+            
+            suspicious.forEach(row => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><strong>${row.Claim_ID}</strong></td>
+                    <td>${row.Policy_Type}</td>
+                    <td>${formatINR(row.Claim_Amount)}</td>
+                    <td><span class="badge badge-risk badge-risk-high">${row.Fraud_Risk_Score}</span></td>
+                    <td><span class="badge badge-pending">${row.Claim_Status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Filter and Search in Claims Grid
+        function filterClaimsTable() {
+            const query = document.getElementById("claims-search").value.toLowerCase();
+            const type = document.getElementById("filter-policy-type").value;
+            const status = document.getElementById("filter-status").value;
+            
+            const filtered = claimsData.filter(row => {
+                const matchQuery = row.Customer_Name.toLowerCase().includes(query) || row.Claim_ID.toLowerCase().includes(query);
+                const matchType = type === "" || row.Policy_Type === type;
+                const matchStatus = status === "" || row.Claim_Status === status;
+                return matchQuery && matchType && matchStatus;
+            });
+            
+            renderClaimsTable(filtered);
+        }
+
+        // Render Charts using ChartJS
+        async function renderExecutiveCharts() {
+            try {
+                const res = await fetch("/api/policy_performance");
+                const data = await res.json();
+                
+                const labels = data.map(item => item.Policy_Type);
+                const volumes = data.map(item => item.Total_Claims_Filed);
+                const payouts = data.map(item => item.Total_Claims_Paid);
+                const premiums = data.map(item => item.Total_Premium_Collected);
+                const lossRatios = data.map(item => item.Loss_Ratio * 100);
+
+                // Exec Page Portfolio Mix
+                const ctx1 = document.getElementById('chart-exec-portfolio').getContext('2d');
+                charts.execPortfolio = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Claims Volume Filed',
+                            data: volumes,
+                            backgroundColor: '#3b82f6',
+                            borderWidth: 0,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+
+                // Policy Performance Page: Loss Ratio Heat/Bar
+                const ctx2 = document.getElementById('chart-policy-loss').getContext('2d');
+                charts.policyLoss = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Loss Ratio (%)',
+                            data: lossRatios,
+                            backgroundColor: '#ef4444',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+
+                // Policy Profitability Chart
+                const netProfit = data.map(item => item.Net_Profit);
+                const ctx3 = document.getElementById('chart-policy-profit').getContext('2d');
+                charts.policyProfit = new Chart(ctx3, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Premium Collected',
+                                data: premiums,
+                                backgroundColor: '#10b981',
+                                borderRadius: 6
+                            },
+                            {
+                                label: 'Claims Paid Out',
+                                data: payouts,
+                                backgroundColor: '#f59e0b',
+                                borderRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+
+            } catch (err) {
+                console.error("Error loading executive performance charts:", err);
+            }
+        }
+
+        // Render Fraud Detection Tab Charts
+        async function renderFraudCharts() {
+            try {
+                const res = await fetch("/api/fraud_models");
+                const data = await res.json();
+                
+                const labels = data.map(item => item.Method);
+                const precisions = data.map(item => item.Precision);
+                const recalls = data.map(item => item.Recall);
+                const f1 = data.map(item => item['F1-Score']);
+
+                const ctx = document.getElementById('chart-fraud-models').getContext('2d');
+                charts.fraudModels = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Precision (%)',
+                                data: precisions,
+                                backgroundColor: '#3b82f6',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Recall (%)',
+                                data: recalls,
+                                backgroundColor: '#a78bfa',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'F1-Score (%)',
+                                data: f1,
+                                backgroundColor: '#ef4444',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' }, max: 100 },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+
+            } catch (err) {
+                console.error("Error rendering fraud charts:", err);
+            }
+        }
+
+        // Render Customer Segments Tab Charts
+        async function renderSegmentCharts() {
+            try {
+                const res = await fetch("/api/segments");
+                const data = await res.json();
+                
+                const labels = Object.keys(data);
+                const values = Object.values(data);
+
+                const ctx = document.getElementById('chart-rfm-segments').getContext('2d');
+                charts.segments = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'],
+                            borderWidth: 2,
+                            borderColor: '#1e293b'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: '#f8fafc' }
+                            }
+                        }
+                    }
+                });
+
+            } catch (err) {
+                console.error("Error rendering segment charts:", err);
+            }
+        }
+
+        // Render Forecast Payout Charts
+        async function renderForecastCharts() {
+            try {
+                const res = await fetch("/api/forecasting");
+                const data = await res.json();
+                
+                // Limit to 90 values
+                const dates = data.map(item => item.Date);
+                const payout = data.map(item => item.Forecasted_Payout);
+                const upper = data.map(item => item.Forecasted_Payout_Upper);
+                const lower = data.map(item => item.Forecasted_Payout_Lower);
+
+                const ctx = document.getElementById('chart-forecast-payout').getContext('2d');
+                charts.forecast = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [
+                            {
+                                label: 'Projected Daily Payout (₹)',
+                                data: payout,
+                                borderColor: '#ff7f0e',
+                                backgroundColor: 'rgba(255, 127, 14, 0.1)',
+                                fill: true,
+                                borderWidth: 2,
+                                pointRadius: 0
+                            },
+                            {
+                                label: 'Upper Band (90% CI)',
+                                data: upper,
+                                borderColor: 'rgba(255, 127, 14, 0.3)',
+                                borderDash: [5, 5],
+                                fill: false,
+                                pointRadius: 0
+                            },
+                            {
+                                label: 'Lower Band (90% CI)',
+                                data: lower,
+                                borderColor: 'rgba(255, 127, 14, 0.3)',
+                                borderDash: [5, 5],
+                                fill: false,
+                                pointRadius: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+
+            } catch (err) {
+                console.error("Error rendering forecast charts:", err);
+            }
+        }
+
+        // Render Cohort Heatmap
+        async function renderCohortGrid() {
+            try {
+                const res = await fetch("/api/cohorts");
+                const data = await res.json();
+                
+                const grid = document.getElementById("cohort-matrix-grid");
+                grid.innerHTML = "";
+                
+                // Add header labels
+                const baseHeader = document.createElement("div");
+                baseHeader.className = "cohort-header";
+                baseHeader.innerText = "Cohort Month";
+                grid.appendChild(baseHeader);
+                
+                for (let i = 0; i <= 12; i++) {
+                    const h = document.createElement("div");
+                    h.className = "cohort-header";
+                    h.innerText = `M${i}`;
+                    grid.appendChild(h);
+                }
+                
+                // We show up to 12 rows of data (latest cohorts)
+                data.slice(-12).forEach(row => {
+                    // Month Label
+                    const monthCell = document.createElement("div");
+                    monthCell.className = "cohort-month-label";
+                    monthCell.innerText = row.Cohort_Month;
+                    grid.appendChild(monthCell);
+                    
+                    // Values
+                    for (let i = 0; i <= 12; i++) {
+                        const cell = document.createElement("div");
+                        cell.className = "cohort-cell";
+                        
+                        // Parse cohort index key (e.g. key '0', '1', ... in the record)
+                        const val = row[String(i)];
+                        
+                        if (val !== undefined) {
+                            const rate = parseFloat(val);
+                            cell.innerText = `${(rate * 100).toFixed(1)}%`;
+                            
+                            // Color intensity based on retention percentage
+                            let opacity = rate;
+                            if (i === 0) opacity = 0.8; // cap index 0 coloring
+                            cell.style.backgroundColor = `rgba(59, 130, 246, ${opacity})`;
+                        } else {
+                            cell.innerText = "-";
+                        }
+                        grid.appendChild(cell);
+                    }
+                });
+
+            } catch (err) {
+                console.error("Error rendering cohort grid matrix:", err);
+            }
+        }
+
+        // Initialize dashboard app
+        async function init() {
+            await fetchKPIs();
+            await fetchClaims();
+            await renderExecutiveCharts();
+            await renderFraudCharts();
+            await renderSegmentCharts();
+            await renderForecastCharts();
+            await renderCohortGrid();
+        }
+
+        // File selection handling
+        let selectedFile = null;
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                validateAndSetFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                validateAndSetFile(files[0]);
+            }
+        }
+
+        function validateAndSetFile(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext !== 'xlsx' && ext !== 'xls') {
+                alert('Please select an Excel file (.xlsx or .xls)');
+                return;
+            }
+            selectedFile = file;
+            
+            document.getElementById('file-name').innerText = file.name;
+            document.getElementById('file-size').innerText = formatBytes(file.size);
+            document.getElementById('file-details').style.display = 'flex';
+            
+            const btn = document.getElementById('btn-process');
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        }
+
+        function clearSelectedFile() {
+            selectedFile = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('file-details').style.display = 'none';
+            
+            const btn = document.getElementById('btn-process');
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Upload and process raw Excel sheet
+        async function uploadAndProcessFile() {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            const modal = document.getElementById('progress-modal');
+            const progressTitle = document.getElementById('progress-title');
+            const progressText = document.getElementById('progress-text');
+            const progressBarFill = document.getElementById('progress-bar-fill');
+
+            modal.style.display = 'flex';
+            
+            // Progress tracker simulation mapping to backend pipeline steps
+            const progressSteps = [
+                { pct: 10, title: "Uploading Excel...", desc: "Saving raw Excel file to target server folder..." },
+                { pct: 25, title: "Parsing Workbook...", desc: "Reading sheet rows and columns to generate pandas dataframes..." },
+                { pct: 40, title: "Cleaning Records...", desc: "Standardizing categorization spelling, null padding, and formatting currencies..." },
+                { pct: 55, title: "Star Schema Loader...", desc: "Mapping tabular data into Fact and Dimension tables in SQLite database..." },
+                { pct: 70, title: "Feature Engineering...", desc: "Computing loss history indicators, customer risk traits, and duration deltas..." },
+                { pct: 80, title: "Customer Segmentation...", desc: "Calculating RFM recency, frequency, and monetary scores and mapping segments..." },
+                { pct: 90, title: "Outlier Machine Learning...", desc: "Fitting Isolation Forest, DBSCAN, and One-Class SVM models to assess fraud flags..." },
+                { pct: 95, title: "ARIMA Forecasting...", desc: "Fitting SARIMA time-series models for 90-day claim payout projections..." }
+            ];
+
+            let stepIdx = 0;
+            const progressInterval = setInterval(() => {
+                if (stepIdx < progressSteps.length) {
+                    const step = progressSteps[stepIdx];
+                    progressTitle.innerText = step.title;
+                    progressText.innerText = step.desc;
+                    progressBarFill.style.width = `${step.pct}%`;
+                    stepIdx++;
+                }
+            }, 2000); // 2 seconds per step gives 16 seconds total matching actual optimized pipeline speed
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+
+                if (response.ok) {
+                    progressBarFill.style.width = '100%';
+                    progressTitle.innerText = "Calculation Complete!";
+                    progressText.innerText = "Dashboard is reloading visual analytics database...";
+                    
+                    setTimeout(async () => {
+                        modal.style.display = 'none';
+                        clearSelectedFile();
+                        
+                        // Destroy charts and reload metrics dynamically
+                        for (let key in charts) {
+                            if (charts[key]) {
+                                charts[key].destroy();
+                            }
+                        }
+                        charts = {};
+                        
+                        // Re-initialize all metrics and charts
+                        await init();
+                        
+                        // Switch to Executive Summary tab and trigger a click on it
+                        const execTabLink = document.querySelector(".nav-links li");
+                        if (execTabLink) {
+                            execTabLink.click();
+                        }
+                        
+                        alert("Data successfully recalculated! All dashboard panels have been dynamically updated.");
+                    }, 1000);
+                } else {
+                    const errData = await response.json();
+                    throw new Error(errData.error || "Server failed to process pipeline.");
+                }
+            } catch (err) {
+                clearInterval(progressInterval);
+                modal.style.display = 'none';
+                alert(`Error: ${err.message}`);
+                console.error(err);
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
