@@ -16,21 +16,6 @@ def handle_exception(e):
         "traceback": tb
     }), 500
 
-@app.route("/api/debug_cols")
-def debug_cols():
-    import os
-    import pandas as pd
-    exists = os.path.exists(PROCESSED_DATA_PATH)
-    cols = []
-    if exists:
-        df = pd.read_csv(PROCESSED_DATA_PATH, nrows=5)
-        cols = list(df.columns)
-    return jsonify({
-        "columns": cols,
-        "path": PROCESSED_DATA_PATH,
-        "exists": exists
-    })
-
 # Define file paths relative to this script
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 PROCESSED_DATA_PATH = os.path.join(BASE_DIR, "data", "processed", "processed_insurance_data.csv")
