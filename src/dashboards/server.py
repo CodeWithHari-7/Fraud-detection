@@ -4,7 +4,15 @@ import pandas as pd
 import numpy as np
 from flask import Flask, jsonify, render_template, request
 
-app = Flask(__name__, template_folder="templates")
+import traceback
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    tb = traceback.format_exc()
+    return jsonify({
+        "error": str(e),
+        "traceback": tb
+    }), 500
 
 # Define file paths relative to this script
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
